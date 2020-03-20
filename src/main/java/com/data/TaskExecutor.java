@@ -9,9 +9,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.mapred.FileOutputFormat;
+import org.apache.hadoop.mapred.JobClient;
+import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
+import com.data.mappers.LinkMapper;
+import com.data.reducers.LinkReducer;
 import com.data.utils.ZipExtractor;
 import com.data.utils.ZipFileDownloader;
 
@@ -41,7 +46,7 @@ public class TaskExecutor extends Configured implements Tool {
 
 	public int run(String[] args) throws Exception {
 
-		if (args.length != 1) { // Checking for command line arguments
+		if (args.length != 2) { // Checking for command line arguments
 			System.err.printf("Invalid arguments count");
 			ToolRunner.printGenericCommandUsage(System.err);
 			return -1;
@@ -53,6 +58,18 @@ public class TaskExecutor extends Configured implements Tool {
 			ZipExtractor.extract(Paths.get(zipFileName));
 			this.prepareFilesList(Paths.get(zipFileName.substring(0, zipFileName.lastIndexOf(".zip"))));
 		}
+
+		// Configuring the job
+		JobConf conf = new JobConf(getConf(), TaskExecutor.class);
+		conf.setJobName("Modified page rank");
+		conf.setReducerClass(LinkReducer.class);
+		conf.setMapperClass(LinkMapper.class);
+
+		// Setting the output path
+		FileOutputFormat.setOutputPath(conf, new org.apache.hadoop.fs.Path(args[2]));
+
+		// Running the job
+		JobClient.runJob(conf);
 		return 0;
 	}
 
