@@ -14,7 +14,9 @@ import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reporter;
 import org.bson.Document;
 
-public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, Text, List<Text>> {
+import com.data.models.WebInfo;
+
+public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, String, WebInfo> {
 
 	/**
 	 * Checks if the URL should be included in the link map
@@ -35,7 +37,7 @@ public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, Te
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public void map(Object key, Text value, OutputCollector<Text, List<Text>> output, Reporter reporter)
+	public void map(Object key, Text value, OutputCollector<String, WebInfo> output, Reporter reporter)
 			throws IOException {
 
 		try {
@@ -48,8 +50,7 @@ public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, Te
 				if (headerMetaData != null) {
 					String sourceURL = headerMetaData.getString("WARC-Target-URI");
 					if (StringUtils.isNotBlank(sourceURL)) {
-						Text hadoopSourceURL = new Text(sourceURL);
-						List<Text> hadoopTargetURLs = new ArrayList<>();
+						List<String> targetURLs = new ArrayList<>();
 						Document payloadMetaData = (Document) envelope.get("Payload-Metadata");
 						if (payloadMetaData != null) {
 							Document httpResponseMetadata = (Document) payloadMetaData.get("HTTP-Response-Metadata");
@@ -61,7 +62,7 @@ public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, Te
 										links.forEach(link -> {
 											String url = link.getString("url");
 											if (StringUtils.isNotBlank(url) && isIncluded(url)) {
-												hadoopTargetURLs.add(new Text(url));
+												targetURLs.add(url);
 											}
 										});
 									}
@@ -70,7 +71,9 @@ public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, Te
 						}
 
 						// Sending to reducer
-						output.collect(hadoopSourceURL, hadoopTargetURLs);
+						if (!targetURLs.isEmpty()) {
+							output.collect("web-graph", new WebInfo(sourceURL, targetURLs));
+						}
 					}
 				}
 			}
