@@ -78,12 +78,43 @@ public class LinkReducer extends MapReduceBase implements Reducer<String, WebInf
 	/**
 	 * Gets the page rank map
 	 * 
-	 * @param adjacency The adjacency matrix
+	 * @param linkIndexMap The link index map
+	 * @param adjacency    The adjacency matrix
 	 * @return The page rank map
 	 */
-	private HashMap<String, Double> getPageRankMap(int[][] adjacency) {
+	private HashMap<String, Double> getPageRankMap(HashMap<String, Integer> linkIndexMap, int[][] adjacency) {
 
-		return null;
+		int totalLinks = linkIndexMap.size();
+		double[] pageRanks = new double[totalLinks];
+		for (int i = 0; i < totalLinks; i++) {
+			pageRanks[i] = 1.0d;
+		}
+
+		// Calculating the page ranks
+		for (int i = 0; i < totalLinks; i++) {
+			int totalOutgoings = 0;
+			for (int j = 0; j < totalLinks; j++) {
+				if (adjacency[i][j] == 1) {
+					totalOutgoings++;
+				}
+			}
+
+			if (totalOutgoings > 0) {
+				for (int j = 0; j < totalLinks; j++) {
+					if (adjacency[i][j] == 1) {
+						pageRanks[j] += pageRanks[i] / totalOutgoings;
+					}
+				}
+			}
+		}
+
+		// Preparing the map
+		HashMap<String, Double> pageRankMap = new HashMap<>();
+		for (Entry<String, Integer> entry : linkIndexMap.entrySet()) {
+			pageRankMap.put(entry.getKey(), pageRanks[entry.getValue()]);
+		}
+
+		return pageRankMap;
 	}
 
 	/**
@@ -99,7 +130,7 @@ public class LinkReducer extends MapReduceBase implements Reducer<String, WebInf
 
 		// Removing the loops
 		adjacency = this.removeLoops(adjacency);
-		return this.getPageRankMap(adjacency);
+		return this.getPageRankMap(linkIndexMap, adjacency);
 	}
 
 	/**
