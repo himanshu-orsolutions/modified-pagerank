@@ -5,26 +5,28 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 
 import org.apache.hadoop.mapred.MapReduceBase;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
 
+import com.data.models.Connection;
 import com.data.models.WebInfo;
+import com.data.utils.LoopDetector;
 import com.data.utils.StaleLinkChecker;
 
-public class LinkReducer extends MapReduceBase implements Reducer<String, WebInfo, String, String> {
+public class LinkReducer extends MapReduceBase implements Reducer<String, WebInfo, String, Double> {
 
 	/**
-	 * Prepares the adjacency matrix from the web info list
+	 * Gets the link index map
 	 * 
 	 * @param webInfoList The web info list
-	 * @return The adjacency matrix
+	 * @return The link index map
 	 */
-	private int[][] prepareAdjacencyMatrix(List<WebInfo> webInfoList) {
+	private HashMap<String, Integer> getLinkIndexMap(List<WebInfo> webInfoList) {
 
-		int[][] adjacency;
 		int index = 0;
 		HashMap<String, Integer> linkIndexMap = new HashMap<>();
 
@@ -42,9 +44,21 @@ public class LinkReducer extends MapReduceBase implements Reducer<String, WebInf
 			}
 		}
 
-		// Preparing the adjacency
+		return linkIndexMap;
+	}
+
+	/**
+	 * Prepares the adjacency matrix
+	 * 
+	 * @param webInfoList  The web info list
+	 * @param linkIndexMap The link index map
+	 * @return The adjacency matrix
+	 */
+	private int[][] prepareAdjacencyMatrix(List<WebInfo> webInfoList, HashMap<String, Integer> linkIndexMap) {
+
 		int totalLinks = linkIndexMap.size();
-		adjacency = new int[totalLinks][totalLinks];
+		int[][] adjacency = new int[totalLinks][totalLinks];
+
 		for (WebInfo webInfo : webInfoList) {
 			String sourceURL = webInfo.getHadoopSourceURL();
 			List<String> targetURLs = webInfo.getHadoopTargetURLs();
@@ -62,10 +76,53 @@ public class LinkReducer extends MapReduceBase implements Reducer<String, WebInf
 	}
 
 	/**
+	 * Gets the page rank map
+	 * 
+	 * @param adjacency The adjacency matrix
+	 * @return The page rank map
+	 */
+	private HashMap<String, Double> getPageRankMap(int[][] adjacency) {
+
+		return null;
+	}
+
+	/**
+	 * Gets the page rank map
+	 * 
+	 * @param webInfoList The web info list
+	 * @return The pagerank map
+	 */
+	private HashMap<String, Double> getPageRankMap(List<WebInfo> webInfoList) {
+
+		HashMap<String, Integer> linkIndexMap = this.getLinkIndexMap(webInfoList);
+		int[][] adjacency = this.prepareAdjacencyMatrix(webInfoList, linkIndexMap);
+
+		// Removing the loops
+		adjacency = this.removeLoops(adjacency);
+		return this.getPageRankMap(adjacency);
+	}
+
+	/**
+	 * Removes the loops
+	 * 
+	 * @param adjacencyMatrix The adjacency matrix
+	 */
+	private int[][] removeLoops(int[][] adjacencyMatrix) {
+
+		LoopDetector loopDetector = new LoopDetector();
+		List<Connection> loops = loopDetector.getLoops(adjacencyMatrix);
+		for (Connection connection : loops) {
+			adjacencyMatrix[connection.getSourceLinkIndex()][connection.getTargetLinkIndex()] = 0;
+		}
+
+		return adjacencyMatrix;
+	}
+
+	/**
 	 * Reduces the web info list
 	 */
 	@Override
-	public void reduce(String key, Iterator<WebInfo> values, OutputCollector<String, String> output, Reporter reporter)
+	public void reduce(String key, Iterator<WebInfo> values, OutputCollector<String, Double> output, Reporter reporter)
 			throws IOException {
 
 		List<WebInfo> webInfoList = new ArrayList<>();
@@ -73,6 +130,9 @@ public class LinkReducer extends MapReduceBase implements Reducer<String, WebInf
 			webInfoList.add(values.next());
 		}
 
-		int[][] adjacencyMatrix = prepareAdjacencyMatrix(webInfoList);
+		HashMap<String, Double> pagerankMap = this.getPageRankMap(webInfoList);
+		for (Entry<String, Double> entry : pagerankMap.entrySet()) {
+			output.collect(entry.getKey(), entry.getValue());
+		}
 	}
 }
