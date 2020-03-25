@@ -66,7 +66,7 @@ public class TaskExecutor extends Configured implements Tool {
 		conf.setMapperClass(LinkMapper.class);
 
 		// Setting the output path
-		FileOutputFormat.setOutputPath(conf, new org.apache.hadoop.fs.Path(args[2]));
+		FileOutputFormat.setOutputPath(conf, new org.apache.hadoop.fs.Path(args[1]));
 
 		// Running the job
 		JobClient.runJob(conf);
