@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.FileOutputFormat;
 import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
@@ -64,6 +65,9 @@ public class TaskExecutor extends Configured implements Tool {
 		conf.setJobName("Modified page rank");
 		conf.setReducerClass(LinkReducer.class);
 		conf.setMapperClass(LinkMapper.class);
+
+		// Setting the input path
+		FileInputFormat.setInputPaths(conf, new org.apache.hadoop.fs.Path("files.txt"));
 
 		// Setting the output path
 		FileOutputFormat.setOutputPath(conf, new org.apache.hadoop.fs.Path(args[1]));
