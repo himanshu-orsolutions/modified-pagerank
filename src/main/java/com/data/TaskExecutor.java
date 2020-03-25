@@ -47,7 +47,7 @@ public class TaskExecutor extends Configured implements Tool {
 
 	public int run(String[] args) throws Exception {
 
-		if (args.length != 2) { // Checking for command line arguments
+		if (args.length != 3) { // Checking for command line arguments
 			System.err.printf("Invalid arguments count");
 			ToolRunner.printGenericCommandUsage(System.err);
 			return -1;
@@ -67,10 +67,10 @@ public class TaskExecutor extends Configured implements Tool {
 		conf.setMapperClass(LinkMapper.class);
 
 		// Setting the input path
-		FileInputFormat.setInputPaths(conf, new org.apache.hadoop.fs.Path("files.txt"));
+		FileInputFormat.setInputPaths(conf, new org.apache.hadoop.fs.Path(args[1]));
 
 		// Setting the output path
-		FileOutputFormat.setOutputPath(conf, new org.apache.hadoop.fs.Path(args[1]));
+		FileOutputFormat.setOutputPath(conf, new org.apache.hadoop.fs.Path(args[2]));
 
 		// Running the job
 		JobClient.runJob(conf);
