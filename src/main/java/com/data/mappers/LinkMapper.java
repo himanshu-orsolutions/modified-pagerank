@@ -70,6 +70,9 @@ public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, St
 							}
 						}
 
+						System.out.println(sourceURL);
+						System.out.println(targetURLs);
+						System.out.println("----------------------------");
 						// Sending to reducer
 						if (!targetURLs.isEmpty()) {
 							output.collect("web-graph", new WebInfo(sourceURL, targetURLs));
