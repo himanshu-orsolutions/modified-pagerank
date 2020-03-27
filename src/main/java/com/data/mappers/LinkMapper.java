@@ -15,8 +15,9 @@ import org.apache.hadoop.mapred.Reporter;
 import org.bson.Document;
 
 import com.data.models.WebInfo;
+import com.google.gson.Gson;
 
-public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, String, WebInfo> {
+public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, Text, Text> {
 
 	/**
 	 * Checks if the URL should be included in the link map
@@ -37,8 +38,7 @@ public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, St
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public void map(Object key, Text value, OutputCollector<String, WebInfo> output, Reporter reporter)
-			throws IOException {
+	public void map(Object key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
 
 		try {
 			byte[] data = Files.readAllBytes(Paths.get(value.toString()));
@@ -70,12 +70,10 @@ public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, St
 							}
 						}
 
-						System.out.println(sourceURL);
-						System.out.println(targetURLs);
-						System.out.println("----------------------------");
 						// Sending to reducer
 						if (!targetURLs.isEmpty()) {
-							output.collect("web-graph", new WebInfo(sourceURL, targetURLs));
+							output.collect(new Text("web-graph"),
+									new Text(new Gson().toJson(new WebInfo(sourceURL, targetURLs))));
 						}
 					}
 				}

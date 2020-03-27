@@ -7,6 +7,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 
+import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.MapReduceBase;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
@@ -16,8 +18,9 @@ import com.data.models.Connection;
 import com.data.models.WebInfo;
 import com.data.utils.LoopDetector;
 import com.data.utils.StaleLinkChecker;
+import com.google.gson.Gson;
 
-public class LinkReducer extends MapReduceBase implements Reducer<String, WebInfo, String, Double> {
+public class LinkReducer extends MapReduceBase implements Reducer<Text, Text, Text, DoubleWritable> {
 
 	/**
 	 * Gets the link index map
@@ -34,11 +37,11 @@ public class LinkReducer extends MapReduceBase implements Reducer<String, WebInf
 			String sourceURL = webInfo.getHadoopSourceURL();
 			List<String> targetURLs = webInfo.getHadoopTargetURLs();
 
-			if (!StaleLinkChecker.check(sourceURL)) {
+			if (!StaleLinkChecker.check(sourceURL) && !linkIndexMap.containsKey(sourceURL)) {
 				linkIndexMap.put(sourceURL, index++);
 			}
 			for (String targetURL : targetURLs) {
-				if (!StaleLinkChecker.check(targetURL)) {
+				if (!StaleLinkChecker.check(targetURL) && !linkIndexMap.containsKey(targetURL)) {
 					linkIndexMap.put(targetURL, index++);
 				}
 			}
@@ -153,17 +156,17 @@ public class LinkReducer extends MapReduceBase implements Reducer<String, WebInf
 	 * Reduces the web info list
 	 */
 	@Override
-	public void reduce(String key, Iterator<WebInfo> values, OutputCollector<String, Double> output, Reporter reporter)
+	public void reduce(Text key, Iterator<Text> values, OutputCollector<Text, DoubleWritable> output, Reporter reporter)
 			throws IOException {
 
 		List<WebInfo> webInfoList = new ArrayList<>();
 		while (values.hasNext()) {
-			webInfoList.add(values.next());
+			webInfoList.add(new Gson().fromJson(values.next().toString(), WebInfo.class));
 		}
 
 		HashMap<String, Double> pagerankMap = this.getPageRankMap(webInfoList);
 		for (Entry<String, Double> entry : pagerankMap.entrySet()) {
-			output.collect(entry.getKey(), entry.getValue());
+			output.collect(new Text(entry.getKey()), new DoubleWritable(entry.getValue()));
 		}
 	}
 }
