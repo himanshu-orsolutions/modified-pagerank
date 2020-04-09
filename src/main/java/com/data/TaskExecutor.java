@@ -53,6 +53,7 @@ public class TaskExecutor extends Configured implements Tool {
 	public void uploadMetadataToHadoop() throws IOException {
 
 		Runtime.getRuntime().exec("hdfs dfs -rm /files.txt");
+		Runtime.getRuntime().exec("hdfs dfs -rm -r /modified-pagerank");	
 		Runtime.getRuntime().exec("hdfs dfs -put files.txt /");
 	}
 

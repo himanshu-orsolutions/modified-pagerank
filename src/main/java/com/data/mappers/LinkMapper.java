@@ -41,6 +41,7 @@ public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, Te
 	public void map(Object key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
 
 		try {
+			System.out.println(String.format("WAT file path: %s", value.toString()));
 			byte[] data = Files.readAllBytes(Paths.get(value.toString()));
 			String jsonContent = new String(data);
 			Document root = Document.parse(jsonContent);
@@ -72,6 +73,7 @@ public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, Te
 
 						// Sending to reducer
 						if (!targetURLs.isEmpty()) {
+							System.out.println(String.format("Found %d outgoing URLs", targetURLs.size()));
 							output.collect(new Text("web-graph"),
 									new Text(new Gson().toJson(new WebInfo(sourceURL, targetURLs))));
 						}
