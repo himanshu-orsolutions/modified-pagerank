@@ -42,6 +42,8 @@ public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, Te
 
 		try {
 			System.out.println(String.format("WAT file path: %s", value.toString()));
+			System.out.println("File present: "+Paths.get(value.toString()).toFile().exists());
+		
 			byte[] data = Files.readAllBytes(Paths.get(value.toString()));
 			String jsonContent = new String(data);
 			Document root = Document.parse(jsonContent);
