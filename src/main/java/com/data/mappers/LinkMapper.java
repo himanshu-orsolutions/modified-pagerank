@@ -1,5 +1,6 @@
 package com.data.mappers;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,10 +45,17 @@ public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, Te
 	public void map(Object key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
 
 		FileSystem fileSystem = FileSystem.get(new JobConf());
-		try (FSDataInputStream inputStream = fileSystem.open(new Path(value.toString()))) {
+		try (FSDataInputStream inputStream = fileSystem.open(new Path(value.toString()));
+				ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
 			System.out.println(String.format("WAT file path: %s", value.toString()));
 
-			byte[] data = IOUtils.toByteArray(inputStream);
+			int len;
+			byte[] buffer = new byte[1024];
+			while ((len = inputStream.read(buffer)) > 0) {
+				outputStream.write(buffer, 0, len);
+			}
+
+			byte[] data = outputStream.toByteArray();
 			String jsonContent = new String(data);
 			Document root = Document.parse(jsonContent);
 			Document envelope = (Document) root.get("Envelope");

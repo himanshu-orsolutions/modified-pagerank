@@ -3,6 +3,7 @@ package com.data;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -97,8 +98,13 @@ public class TaskExecutor extends Configured implements Tool {
 		if (zipFilePath.endsWith(".zip")) {
 			Path path = new Path(zipFilePath);
 			if (!fileSystem.exists(path)) {
-				try (FSDataOutputStream outputStream = fileSystem.create(path)) {
-					outputStream.write(IOUtils.toByteArray(url.openConnection()));
+				try (FSDataOutputStream outputStream = fileSystem.create(path);
+						InputStream inputStream = url.openStream()) {
+					int len;
+					byte[] buffer = new byte[1024];
+					while ((len = inputStream.read(buffer)) > 0) {
+						outputStream.write(buffer, 0, len);
+					}
 				}
 			}
 			return zipFilePath;
