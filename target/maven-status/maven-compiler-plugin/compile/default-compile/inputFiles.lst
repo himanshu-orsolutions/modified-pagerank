@@ -1,4 +1,7 @@
-/home/mechanic/thinkandco_final_repos/housestats-hadoop/src/main/java/com/data/HouseMapper.java
-/home/mechanic/thinkandco_final_repos/housestats-hadoop/src/main/java/com/data/DataJoiner.java
-/home/mechanic/thinkandco_final_repos/housestats-hadoop/src/main/java/com/data/WeatherMapper.java
-/home/mechanic/thinkandco_final_repos/housestats-hadoop/src/main/java/com/data/TaskExecutor.java
+/home/mechanic/thinkandco_final_repos/modified-pagerank/src/main/java/com/data/models/WebInfo.java
+/home/mechanic/thinkandco_final_repos/modified-pagerank/src/main/java/com/data/models/Connection.java
+/home/mechanic/thinkandco_final_repos/modified-pagerank/src/main/java/com/data/utils/StaleLinkChecker.java
+/home/mechanic/thinkandco_final_repos/modified-pagerank/src/main/java/com/data/reducers/LinkReducer.java
+/home/mechanic/thinkandco_final_repos/modified-pagerank/src/main/java/com/data/mappers/LinkMapper.java
+/home/mechanic/thinkandco_final_repos/modified-pagerank/src/main/java/com/data/TaskExecutor.java
+/home/mechanic/thinkandco_final_repos/modified-pagerank/src/main/java/com/data/utils/LoopDetector.java
