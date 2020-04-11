@@ -29,10 +29,13 @@ public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, Te
 	 */
 	private boolean isIncluded(String url) {
 
-		String file = url.substring(url.lastIndexOf("/") + 1);
-		String format = file.substring(file.lastIndexOf(".") + 1);
-		return (url.startsWith("http") || url.startsWith("https")) && ("".equals(format) || "stm".equals(format)
-				|| "htm".equals(format) || "html".equals(format) || "shtml".equals(format));
+		if (url != null) {
+			String file = url.substring(url.lastIndexOf("/") + 1);
+			String format = file.substring(file.lastIndexOf(".") + 1);
+			return (url.startsWith("http") || url.startsWith("https")) && ("".equals(format) || "stm".equals(format)
+					|| "htm".equals(format) || "html".equals(format) || "shtml".equals(format));
+		}
+		return false;
 	}
 
 	/**
