@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -33,8 +31,8 @@ public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, Te
 
 		String file = url.substring(url.lastIndexOf("/") + 1);
 		String format = file.substring(file.lastIndexOf(".") + 1);
-		return (url.startsWith("http") || url.startsWith("https"))
-				&& (StringUtils.isBlank(format) || StringUtils.equalsAny("stm", "htm", "html", "shtml", format));
+		return (url.startsWith("http") || url.startsWith("https")) && ("".equals(format) || "stm".equals(format)
+				|| "htm".equals(format) || "html".equals(format) || "shtml".equals(format));
 	}
 
 	/**
@@ -63,7 +61,7 @@ public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, Te
 				Document headerMetaData = (Document) envelope.get("WARC-Header-Metadata");
 				if (headerMetaData != null) {
 					String sourceURL = headerMetaData.getString("WARC-Target-URI");
-					if (StringUtils.isNotBlank(sourceURL)) {
+					if (!"".equals(sourceURL)) {
 						List<String> targetURLs = new ArrayList<>();
 						Document payloadMetaData = (Document) envelope.get("Payload-Metadata");
 						if (payloadMetaData != null) {
@@ -75,7 +73,7 @@ public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, Te
 									if (links != null && !links.isEmpty()) {
 										links.forEach(link -> {
 											String url = link.getString("url");
-											if (StringUtils.isNotBlank(url) && isIncluded(url)) {
+											if (!"".equals(url) && isIncluded(url)) {
 												targetURLs.add(url);
 											}
 										});
