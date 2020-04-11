@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -17,6 +19,7 @@ import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.FileOutputFormat;
+import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TextInputFormat;
 import org.apache.hadoop.mapred.TextOutputFormat;
@@ -39,9 +42,11 @@ public class TaskExecutor extends Configured implements Tool {
 	 * @param zipFilePath The zip file path
 	 * @throws IOException
 	 * @throws FileNotFoundException
+	 * @return The list of files paths present in the zip
 	 */
-	public void extract(String zipFilePath) throws IOException {
+	public List<String> extract(String zipFilePath) throws IOException {
 
+		List<String> filePaths = new ArrayList<>();
 		try (FSDataInputStream inputStream = fileSystem.open(new Path(zipFilePath));
 				ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
 			byte[] buffer = new byte[1024];
@@ -53,8 +58,9 @@ public class TaskExecutor extends Configured implements Tool {
 						fileSystem.mkdirs(directoryPath);
 					}
 				} else {
-					try (FSDataOutputStream outputStream = fileSystem
-							.create(new Path(File.separator + zipEntry.getName()))) {
+					String path = File.separator + zipEntry.getName();
+					filePaths.add(path);
+					try (FSDataOutputStream outputStream = fileSystem.create(new Path(path))) {
 						int len;
 						while ((len = zipInputStream.read(buffer)) > 0) {
 							outputStream.write(buffer, 0, len);
@@ -64,6 +70,8 @@ public class TaskExecutor extends Configured implements Tool {
 				zipEntry = zipInputStream.getNextEntry();
 			}
 		}
+
+		return filePaths;
 	}
 
 	/**
@@ -101,21 +109,19 @@ public class TaskExecutor extends Configured implements Tool {
 	public void downloadAndProcessZip(String zipURL) throws IOException {
 
 		String zipFileName = this.download(new URL(zipURL));
-		this.extract(zipFileName);
+		List<String> filePaths = this.extract(zipFileName);
 
 		// Preparing files.txt
-//		try (FileOutputStream fileOutputStream = new FileOutputStream(File.separator + "files.txt");
-//				Stream<java.nio.file.Path> paths = Files
-//						.list(Paths.get(File.separator + zipFileName.substring(0, zipFileName.lastIndexOf(".zip"))));) {
-//			paths.filter(path -> path.toFile().isFile()).forEach(path -> {
-//				try {
-//					fileOutputStream.write(path.toFile().getAbsolutePath().getBytes());
-//					fileOutputStream.write("\n".getBytes());
-//				} catch (IOException ioException) {
-//					System.err.println("Error adding the file path in files.txt");
-//				}
-//			});
-//		}
+		try (FSDataOutputStream outputStream = fileSystem.create(new Path(File.separator + "files.txt"))) {
+			filePaths.forEach(path -> {
+				try {
+					outputStream.write(path.getBytes());
+					outputStream.write("\n".getBytes());
+				} catch (IOException ioException) {
+					ioException.printStackTrace();
+				}
+			});
+		}
 	}
 
 	public void deleteOldFiles() throws IOException {
@@ -150,7 +156,7 @@ public class TaskExecutor extends Configured implements Tool {
 		this.downloadAndProcessZip(args[0]);
 
 		try {
-//			JobClient.runJob(conf);
+			JobClient.runJob(conf);
 		} catch (Exception exception) {
 			exception.printStackTrace();
 		}

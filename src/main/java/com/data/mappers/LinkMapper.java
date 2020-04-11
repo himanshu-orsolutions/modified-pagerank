@@ -1,13 +1,16 @@
 package com.data.mappers;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapReduceBase;
 import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
@@ -40,11 +43,11 @@ public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, Te
 	@SuppressWarnings("unchecked")
 	public void map(Object key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
 
-		try {
+		FileSystem fileSystem = FileSystem.get(new JobConf());
+		try (FSDataInputStream inputStream = fileSystem.open(new Path(value.toString()))) {
 			System.out.println(String.format("WAT file path: %s", value.toString()));
-			System.out.println("File present: " + Paths.get(value.toString()).toFile().exists());
 
-			byte[] data = Files.readAllBytes(Paths.get(value.toString()));
+			byte[] data = IOUtils.toByteArray(inputStream);
 			String jsonContent = new String(data);
 			Document root = Document.parse(jsonContent);
 			Document envelope = (Document) root.get("Envelope");
@@ -85,10 +88,5 @@ public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, Te
 		} catch (IOException ioException) {
 			ioException.printStackTrace();
 		}
-	}
-
-	public static void main(String[] args) {
-
-		System.out.println(Paths.get("/home/hadoop/testsample.txt").toFile().exists());
 	}
 }
