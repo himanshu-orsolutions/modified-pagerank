@@ -16,6 +16,8 @@ import com.google.gson.Gson;
 
 public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, Text, Text> {
 
+	private int counter = 0;
+
 	/**
 	 * Checks if the URL should be included in the link map
 	 * 
@@ -69,8 +71,10 @@ public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, Te
 						}
 
 						// Sending to reducer
-						output.collect(new Text("web-graph"),
-								new Text(new Gson().toJson(new WebInfo(sourceURL, targetURLs))));
+						if (counter++ < 5000) {
+							output.collect(new Text("web-graph"),
+									new Text(new Gson().toJson(new WebInfo(sourceURL, targetURLs))));
+						}
 					}
 				}
 			}
