@@ -94,7 +94,7 @@ public class TaskExecutor extends Configured implements Tool {
 	public String download(URL url) throws IOException {
 
 		String zipFilePath = File.separator + getFileName(url);
-		if (zipFilePath.endsWith(".zip")) {
+		if (zipFilePath.endsWith(".gz")) {
 			Path path = new Path(zipFilePath);
 			if (!fileSystem.exists(path)) {
 				try (FSDataOutputStream outputStream = fileSystem.create(path);
