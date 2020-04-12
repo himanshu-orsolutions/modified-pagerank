@@ -1,10 +1,12 @@
 package com.data;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.URL;
 import java.util.ArrayList;
@@ -68,21 +70,23 @@ public class TaskExecutor extends Configured implements Tool {
 		String baseDir = File.separator + "input" + File.separator;
 		fileSystem.mkdirs(new Path(baseDir));
 
-		try (FSDataInputStream inputStream = fileSystem.open(outputPath)) {
+		try (FSDataInputStream inputStream = fileSystem.open(outputPath);
+				BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
 
-			String line = inputStream.readLine();
+			String line = reader.readLine();
+			int counter = 1;
 			while (line != null) {
 				Pattern pattern = Pattern.compile("\\{\\\"Container\\\"\\:.*\\}");
 				Matcher matcher = pattern.matcher(line);
-				int counter = 1;
-				while (matcher.find()) {
+
+				if (matcher.find()) {
 					String filePath = baseDir + "file" + (counter++) + ".json";
 					filePaths.add(filePath);
 					try (FSDataOutputStream dataOutputStream = fileSystem.create(new Path(filePath))) {
 						dataOutputStream.writeBytes(matcher.group());
 					}
 				}
-				line = inputStream.readLine();
+				line = reader.readLine();
 			}
 		}
 
