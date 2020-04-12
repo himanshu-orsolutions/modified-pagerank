@@ -121,6 +121,7 @@ public class TaskExecutor extends Configured implements Tool {
 		conf.setMapOutputKeyClass(Text.class);
 		conf.setMapOutputValueClass(Text.class);
 		conf.setMapperClass(LinkMapper.class);
+		conf.setCombinerClass(LinkReducer.class);
 		conf.setReducerClass(LinkReducer.class);
 		conf.setInputFormat(TextInputFormat.class);
 		conf.setOutputFormat(TextOutputFormat.class);
