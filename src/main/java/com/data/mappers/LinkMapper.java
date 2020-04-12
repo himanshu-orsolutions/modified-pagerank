@@ -1,15 +1,10 @@
 package com.data.mappers;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapReduceBase;
 import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
@@ -45,20 +40,8 @@ public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, Te
 	@SuppressWarnings("unchecked")
 	public void map(Object key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
 
-		FileSystem fileSystem = FileSystem.get(new JobConf());
-		try (FSDataInputStream inputStream = fileSystem.open(new Path(value.toString()));
-				ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-			System.out.println(String.format("WAT file path: %s", value.toString()));
-
-			int len;
-			byte[] buffer = new byte[1024];
-			while ((len = inputStream.read(buffer)) > 0) {
-				outputStream.write(buffer, 0, len);
-			}
-
-			byte[] data = outputStream.toByteArray();
-			String jsonContent = new String(data);
-			Document root = Document.parse(jsonContent);
+		if (value.toString().matches("\\{\\\"Container\\\"\\:.*\\}")) {
+			Document root = Document.parse(value.toString());
 			Document envelope = (Document) root.get("Envelope");
 			if (envelope != null) {
 				Document headerMetaData = (Document) envelope.get("WARC-Header-Metadata");
@@ -94,8 +77,6 @@ public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, Te
 					}
 				}
 			}
-		} catch (IOException ioException) {
-			ioException.printStackTrace();
 		}
 	}
 }

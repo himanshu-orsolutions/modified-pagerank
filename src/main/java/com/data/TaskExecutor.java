@@ -1,21 +1,13 @@
 package com.data;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -51,9 +43,8 @@ public class TaskExecutor extends Configured implements Tool {
 	 * @throws FileNotFoundException
 	 * @return The list of files paths present in the zip
 	 */
-	public List<String> extract(String zipFilePath) throws IOException {
+	public Path extract(String zipFilePath) throws IOException {
 
-		List<String> filePaths = new ArrayList<>();
 		JobConf jobConf = new JobConf();
 		Path inputPath = new Path(zipFilePath);
 		CompressionCodecFactory factory = new CompressionCodecFactory(jobConf);
@@ -66,31 +57,7 @@ public class TaskExecutor extends Configured implements Tool {
 			IOUtils.copyBytes(inputStream, outputStream, jobConf);
 		}
 
-		// Processing the file
-		String baseDir = File.separator + "input" + File.separator;
-		fileSystem.mkdirs(new Path(baseDir));
-
-		try (FSDataInputStream inputStream = fileSystem.open(outputPath);
-				BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
-
-			String line = reader.readLine();
-			int counter = 1;
-			while (line != null) {
-				Pattern pattern = Pattern.compile("\\{\\\"Container\\\"\\:.*\\}");
-				Matcher matcher = pattern.matcher(line);
-
-				if (matcher.find()) {
-					String filePath = baseDir + "file" + (counter++) + ".json";
-					filePaths.add(filePath);
-					try (FSDataOutputStream dataOutputStream = fileSystem.create(new Path(filePath))) {
-						dataOutputStream.writeBytes(matcher.group());
-					}
-				}
-				line = reader.readLine();
-			}
-		}
-
-		return filePaths;
+		return outputPath;
 	}
 
 	/**
@@ -130,30 +97,15 @@ public class TaskExecutor extends Configured implements Tool {
 		return "";
 	}
 
-	public void downloadAndProcessZip(String zipURL) throws IOException {
+	public Path downloadAndProcessZip(String zipURL) throws IOException {
 
 		String zipFileName = this.download(new URL(zipURL));
-		List<String> filePaths = this.extract(zipFileName);
-
-		// Preparing files.txt
-		try (FSDataOutputStream outputStream = fileSystem.create(new Path(File.separator + "files.txt"))) {
-			filePaths.forEach(path -> {
-				try {
-					outputStream.write(path.getBytes());
-					outputStream.write("\n".getBytes());
-				} catch (IOException ioException) {
-					ioException.printStackTrace();
-				}
-			});
-		}
+		return this.extract(zipFileName);
 	}
 
 	public void deleteOldFiles() throws IOException {
 
-		fileSystem.delete(new Path("/files.txt"), true);
 		fileSystem.delete(new Path("/modified-pagerank"), true);
-		fileSystem.delete(new Path("/input"), true);
-
 	}
 
 	public int run(String[] args) throws Exception {
@@ -174,12 +126,12 @@ public class TaskExecutor extends Configured implements Tool {
 		conf.setReducerClass(LinkReducer.class);
 		conf.setInputFormat(TextInputFormat.class);
 		conf.setOutputFormat(TextOutputFormat.class);
-		FileInputFormat.setInputPaths(conf, new Path("/files.txt"));
 		FileOutputFormat.setOutputPath(conf, new Path("/modified-pagerank"));
 
 		fileSystem = FileSystem.get(conf);
 		this.deleteOldFiles();
-		this.downloadAndProcessZip(args[0]);
+		Path inputPath = this.downloadAndProcessZip(args[0]);
+		FileInputFormat.setInputPaths(conf, inputPath);
 
 		try {
 			JobClient.runJob(conf);
