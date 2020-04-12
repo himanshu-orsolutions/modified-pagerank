@@ -68,19 +68,21 @@ public class TaskExecutor extends Configured implements Tool {
 		String baseDir = File.separator + "input" + File.separator;
 		fileSystem.mkdirs(new Path(baseDir));
 
-		try (FSDataInputStream inputStream = fileSystem.open(outputPath);
-				ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-			IOUtils.copyBytes(inputStream, outputStream, jobConf);
-			String data = new String(outputStream.toByteArray());
-			Pattern pattern = Pattern.compile("\\{\\\"Container\\\"\\:.*\\}");
-			Matcher matcher = pattern.matcher(data);
-			int counter = 1;
-			while (matcher.find()) {
-				String filePath = baseDir + "file" + (counter++) + ".json";
-				filePaths.add(filePath);
-				try (FSDataOutputStream dataOutputStream = fileSystem.create(new Path(filePath))) {
-					dataOutputStream.writeBytes(matcher.group());
+		try (FSDataInputStream inputStream = fileSystem.open(outputPath)) {
+
+			String line = inputStream.readLine();
+			while (line != null) {
+				Pattern pattern = Pattern.compile("\\{\\\"Container\\\"\\:.*\\}");
+				Matcher matcher = pattern.matcher(line);
+				int counter = 1;
+				while (matcher.find()) {
+					String filePath = baseDir + "file" + (counter++) + ".json";
+					filePaths.add(filePath);
+					try (FSDataOutputStream dataOutputStream = fileSystem.create(new Path(filePath))) {
+						dataOutputStream.writeBytes(matcher.group());
+					}
 				}
+				line = inputStream.readLine();
 			}
 		}
 
