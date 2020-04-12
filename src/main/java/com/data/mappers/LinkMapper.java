@@ -3,7 +3,6 @@ package com.data.mappers;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.MapReduceBase;
@@ -70,7 +69,7 @@ public class LinkMapper extends MapReduceBase implements Mapper<Object, Text, Te
 						}
 
 						// Sending to reducer
-						output.collect(new Text("web-graph" + new Random().nextInt(10)),
+						output.collect(new Text("web-graph" + System.currentTimeMillis() % 1000),
 								new Text(new Gson().toJson(new WebInfo(sourceURL, targetURLs))));
 
 					}
