@@ -54,7 +54,7 @@ public class TaskExecutor extends Configured implements Tool {
 		try (InputStream inputStream = codec.createInputStream(fileSystem.open(inputPath));
 				OutputStream outputStream = fileSystem.create(outputPath);) {
 
-			IOUtils.copyBytes(inputStream, outputStream, jobConf);
+			IOUtils.copyBytes(inputStream, outputStream, 524288000, true);
 		}
 
 		return outputPath;
@@ -118,7 +118,6 @@ public class TaskExecutor extends Configured implements Tool {
 
 		JobConf conf = new JobConf(TaskExecutor.class);
 		conf.setJobName("Modified Page Rank");
-		conf.setNumReduceTasks(5);
 		conf.setOutputKeyClass(Text.class);
 		conf.setOutputValueClass(DoubleWritable.class);
 		conf.setMapOutputKeyClass(Text.class);
