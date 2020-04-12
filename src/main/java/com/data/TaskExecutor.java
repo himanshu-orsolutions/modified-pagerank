@@ -1,14 +1,16 @@
 package com.data;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -16,7 +18,10 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.compress.CompressionCodec;
+import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.FileOutputFormat;
 import org.apache.hadoop.mapred.JobClient;
@@ -47,27 +52,35 @@ public class TaskExecutor extends Configured implements Tool {
 	public List<String> extract(String zipFilePath) throws IOException {
 
 		List<String> filePaths = new ArrayList<>();
-		try (FSDataInputStream inputStream = fileSystem.open(new Path(zipFilePath));
-				ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
-			byte[] buffer = new byte[1024];
-			ZipEntry zipEntry = zipInputStream.getNextEntry();
-			while (zipEntry != null) {
-				if (zipEntry.isDirectory()) {
-					Path directoryPath = new Path(File.separator + zipEntry.getName());
-					if (!fileSystem.exists(directoryPath)) {
-						fileSystem.mkdirs(directoryPath);
-					}
-				} else {
-					String path = File.separator + zipEntry.getName();
-					filePaths.add(path);
-					try (FSDataOutputStream outputStream = fileSystem.create(new Path(path))) {
-						int len;
-						while ((len = zipInputStream.read(buffer)) > 0) {
-							outputStream.write(buffer, 0, len);
-						}
-					}
+		JobConf jobConf = new JobConf();
+		Path inputPath = new Path(zipFilePath);
+		CompressionCodecFactory factory = new CompressionCodecFactory(jobConf);
+		CompressionCodec codec = factory.getCodec(inputPath);
+		Path outputPath = new Path(CompressionCodecFactory.removeSuffix(zipFilePath, codec.getDefaultExtension()));
+
+		try (InputStream inputStream = codec.createInputStream(fileSystem.open(inputPath));
+				OutputStream outputStream = fileSystem.create(outputPath);) {
+
+			IOUtils.copyBytes(inputStream, outputStream, jobConf);
+		}
+
+		// Processing the file
+		String baseDir = File.separator + "input" + File.separator;
+		fileSystem.mkdirs(new Path(baseDir));
+
+		try (FSDataInputStream inputStream = fileSystem.open(outputPath);
+				ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+			IOUtils.copyBytes(inputStream, outputStream, jobConf);
+			String data = new String(outputStream.toByteArray());
+			Pattern pattern = Pattern.compile("\\{\\\"Container\\\"\\:.*\\}");
+			Matcher matcher = pattern.matcher(data);
+			int counter = 1;
+			while (matcher.find()) {
+				String filePath = baseDir + "file" + (counter++) + ".json";
+				filePaths.add(filePath);
+				try (FSDataOutputStream dataOutputStream = fileSystem.create(new Path(filePath))) {
+					dataOutputStream.writeBytes(matcher.group());
 				}
-				zipEntry = zipInputStream.getNextEntry();
 			}
 		}
 
@@ -133,6 +146,8 @@ public class TaskExecutor extends Configured implements Tool {
 
 		fileSystem.delete(new Path("/files.txt"), true);
 		fileSystem.delete(new Path("/modified-pagerank"), true);
+		fileSystem.delete(new Path("/input"), true);
+
 	}
 
 	public int run(String[] args) throws Exception {
