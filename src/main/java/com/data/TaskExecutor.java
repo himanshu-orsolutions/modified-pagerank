@@ -118,6 +118,7 @@ public class TaskExecutor extends Configured implements Tool {
 
 		JobConf conf = new JobConf(TaskExecutor.class);
 		conf.setJobName("Modified Page Rank");
+		conf.setNumReduceTasks(4);
 		conf.setOutputKeyClass(Text.class);
 		conf.setOutputValueClass(DoubleWritable.class);
 		conf.setMapOutputKeyClass(Text.class);
