@@ -165,6 +165,7 @@ public class LinkReducer extends MapReduceBase implements Reducer<Text, Text, Te
 		}
 
 		HashMap<String, Double> pagerankMap = this.getPageRankMap(webInfoList);
+		pagerankMap.remove(null);
 		for (Entry<String, Double> entry : pagerankMap.entrySet()) {
 			output.collect(new Text(entry.getKey()), new DoubleWritable(entry.getValue()));
 		}
