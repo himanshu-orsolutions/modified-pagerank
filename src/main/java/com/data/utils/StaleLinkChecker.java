@@ -10,6 +10,6 @@ public class StaleLinkChecker {
 	 */
 	public static boolean check(String url) {
 
-		return true;
+		return false;
 	}
 }
