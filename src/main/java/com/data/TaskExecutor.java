@@ -50,19 +50,9 @@ public class TaskExecutor extends Configured implements Tool {
 		CompressionCodecFactory factory = new CompressionCodecFactory(jobConf);
 		CompressionCodec codec = factory.getCodec(inputPath);
 		Path outputPath = new Path(CompressionCodecFactory.removeSuffix(zipFilePath, codec.getDefaultExtension()));
-		int totalBytes = 0;
 		try (InputStream inputStream = codec.createInputStream(fileSystem.open(inputPath));
 				OutputStream outputStream = fileSystem.create(outputPath);) {
-
-			int len;
-			byte[] buffer = new byte[1024];
-			while ((len = inputStream.read(buffer)) > 0) {
-				outputStream.write(buffer, 0, len);
-				totalBytes += len;
-				if (totalBytes > 524288000) {
-					break;
-				}
-			}
+			IOUtils.copyBytes(inputStream, outputStream, jobConf);
 		}
 
 		return outputPath;
