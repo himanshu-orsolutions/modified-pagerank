@@ -29,9 +29,9 @@ import com.data.mappers.LinkMapper;
 import com.data.reducers.LinkReducer;
 
 /**
- * The TaskExecutor. It holds implementation to execute the map-reduce task.
+ * The MainExecutor. It holds implementation to execute the map-reduce task.
  */
-public class TaskExecutor extends Configured implements Tool {
+public class MainExecutor extends Configured implements Tool {
 
 	private FileSystem fileSystem;
 
@@ -114,7 +114,7 @@ public class TaskExecutor extends Configured implements Tool {
 			return -1;
 		}
 
-		JobConf conf = new JobConf(TaskExecutor.class);
+		JobConf conf = new JobConf(MainExecutor.class);
 		conf.setJobName("Modified Page Rank");
 		conf.setOutputKeyClass(Text.class);
 		conf.setOutputValueClass(DoubleWritable.class);
@@ -149,7 +149,7 @@ public class TaskExecutor extends Configured implements Tool {
 	public static void main(String[] args) {
 
 		try {
-			int exitCode = ToolRunner.run(new TaskExecutor(), args);
+			int exitCode = ToolRunner.run(new MainExecutor(), args);
 			System.exit(exitCode);
 		} catch (Exception exception) {
 			exception.printStackTrace();

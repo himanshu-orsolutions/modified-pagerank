@@ -16,8 +16,8 @@ import org.apache.hadoop.mapred.Reporter;
 
 import com.data.models.Connection;
 import com.data.models.WebInfo;
-import com.data.utils.LoopDetector;
-import com.data.utils.StaleLinkChecker;
+import com.data.utils.ReturnLinkDetector;
+import com.data.utils.NonFunctionalLinkChecker;
 import com.google.gson.Gson;
 
 public class LinkReducer extends MapReduceBase implements Reducer<Text, Text, Text, DoubleWritable> {
@@ -37,11 +37,11 @@ public class LinkReducer extends MapReduceBase implements Reducer<Text, Text, Te
 			String sourceURL = webInfo.getHadoopSourceURL();
 			List<String> targetURLs = webInfo.getHadoopTargetURLs();
 
-			if (!StaleLinkChecker.check(sourceURL) && !linkIndexMap.containsKey(sourceURL)) {
+			if (!NonFunctionalLinkChecker.check(sourceURL) && !linkIndexMap.containsKey(sourceURL)) {
 				linkIndexMap.put(sourceURL, index++);
 			}
 			for (String targetURL : targetURLs) {
-				if (!StaleLinkChecker.check(targetURL) && !linkIndexMap.containsKey(targetURL)) {
+				if (!NonFunctionalLinkChecker.check(targetURL) && !linkIndexMap.containsKey(targetURL)) {
 					linkIndexMap.put(targetURL, index++);
 				}
 			}
@@ -143,8 +143,8 @@ public class LinkReducer extends MapReduceBase implements Reducer<Text, Text, Te
 	 */
 	private int[][] removeLoops(int[][] adjacencyMatrix) {
 
-		LoopDetector loopDetector = new LoopDetector();
-		List<Connection> loops = loopDetector.getLoops(adjacencyMatrix);
+		ReturnLinkDetector returnLinkDetector = new ReturnLinkDetector();
+		List<Connection> loops = returnLinkDetector.getLoops(adjacencyMatrix);
 		for (Connection connection : loops) {
 			adjacencyMatrix[connection.getSourceLinkIndex()][connection.getTargetLinkIndex()] = 0;
 		}

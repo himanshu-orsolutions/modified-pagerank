@@ -5,7 +5,7 @@ import java.util.List;
 
 import com.data.models.Connection;
 
-public class LoopDetector {
+public class ReturnLinkDetector {
 
 	private List<Connection> loops = new ArrayList<>();
 
